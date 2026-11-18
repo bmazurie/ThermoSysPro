@@ -10,7 +10,7 @@ model TestStaticDrum_PlugWaterSteam
   ThermoSysPro.WaterSteam.BoundaryConditions.Sink sinkP2 annotation (Placement(transformation(extent={{60,50},{80,70}}, rotation=0)));
   ThermoSysPro.WaterSteam.BoundaryConditions.RefP refP(P0=3e5) annotation (Placement(transformation(extent={{-26,-90},{-6,-70}}, rotation=0)));
   ThermoSysPro.WaterSteam.BoundaryConditions.RefQ refQ(Q0=100) annotation (Placement(transformation(extent={{-56,-90},{-36,-70}}, rotation=0)));
-  ThermoSysPro.WaterSteam.BoundaryConditions.PlugA sourcePlug(C(h(fixed=true))) annotation (Placement(transformation(extent={{-90,-90},{-70,-70}}, rotation=0)));
+  ThermoSysPro.WaterSteam.BoundaryConditions.PlugA sourcePlug(C(h(fixed=false))) annotation (Placement(transformation(extent={{-90,-90},{-70,-70}}, rotation=0)));
 equation
   connect(sourcePlug.C, refQ.C1) annotation (Line(points={{-70,-80},{-56,-80}}, color={0,0,255}));
   connect(refQ.C2, refP.C1) annotation (Line(points={{-36,-80},{-26,-80}}, color={0,0,255}));

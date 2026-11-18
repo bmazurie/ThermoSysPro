@@ -1,7 +1,8 @@
 within ThermoSysPro.Examples.ComparaisonFluidWaterSteam.Junctions;
 model CompareStaticDrum_Plug
   extends PartialComparison(nPorts=3);
-  ThermoSysPro.Fluid.Examples.SimpleExamples.Junctions.TestStaticDrum_Plug fluid annotation (Placement(transformation(extent={{-90,-10},{-10,10}})));
+  ThermoSysPro.Fluid.Examples.SimpleExamples.Junctions.TestStaticDrum_Plug fluid(
+    sourcePlug.C(h(fixed=false))) annotation (Placement(transformation(extent={{-90,-10},{-10,10}})));
   TestStaticDrum_PlugWaterSteam waterSteam annotation (Placement(transformation(extent={{10,-10},{90,10}})));
 equation
   fluidQ={fluid.StaticDrumTh1.Ce_eco.Q,fluid.StaticDrumTh1.Cs_purg.Q,fluid.StaticDrumTh1.Cs_sur.Q};
