@@ -1,0 +1,9 @@
+PartialComparison
+TestCentrifugalPumpWaterSteam
+CompareCentrifugalPump
+TestStaticCentrifugalPumpWaterSteam
+CompareStaticCentrifugalPump
+TestSteamEngineWaterSteam
+CompareSteamEngine
+TestStodolaTurbineWaterSteam
+CompareStodolaTurbine
