@@ -10,5 +10,11 @@ equation
   waterSteamQ={waterSteam.Tank1.Ce1.Q,waterSteam.Tank1.Cs1.Q,waterSteam.Tank1.Cs2.Q};
   waterSteamP={waterSteam.Tank1.Ce1.P,waterSteam.Tank1.Cs1.P,waterSteam.Tank1.Cs2.P};
   waterSteamH={waterSteam.Tank1.Ce1.h,waterSteam.Tank1.Cs1.h,waterSteam.Tank1.Cs2.h};
-  annotation (experiment(StopTime=20, Tolerance=1e-6), Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(coordinateSystem(preserveAspectRatio=false)));
+  annotation (experiment(StopTime=20, Tolerance=1e-6), Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(coordinateSystem(preserveAspectRatio=false)), Documentation(info="
+Known component difference: the regularisation parameter of the valve law
+`ThermoSquare(Q, eps)` is `eps = 1e-3` in `Fluid.PressureLosses.ControlValve` and
+`eps = 1` in `WaterSteam.PressureLosses.ControlValve`, so below 1 kg/s the
+WaterSteam valve law is linear instead of quadratic. `eps` is a protected
+parameter in both components and cannot be aligned by a modifier.
+"));
 end CompareTank_withPipePressureLosses;

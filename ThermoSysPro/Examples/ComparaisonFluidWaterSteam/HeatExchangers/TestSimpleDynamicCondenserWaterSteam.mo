@@ -43,7 +43,9 @@ model TestSimpleDynamicCondenserWaterSteam
     /* Steam and condensate flows are both imposed: the steady-state start
        leaves the condenser mass undetermined, it is fixed by Vv. */
     Vv(start=23.606508, fixed=true),
-    xl(start=-3.5873317E-08))
+    xl(start=-3.5873317E-08),
+    hl(start=137750.36),
+    hv(start=137750.47))
                    annotation (Placement(transformation(extent={{14,-46},{70,-6}}, rotation=0)));
   ThermoSysPro.WaterSteam.BoundaryConditions.SourceP source_retourCondensats(
     P0=25560,
@@ -68,7 +70,7 @@ model TestSimpleDynamicCondenserWaterSteam
     h0=2624.5e3) annotation (Placement(transformation(extent={{-60,110},{-40,130}})));
   ThermoSysPro.WaterSteam.BoundaryConditions.SourceQ sourceQ(
     Q0=7006,
-    h0=113e3) annotation (Placement(transformation(extent={{-72,-40},{-52,-20}}, rotation=0)));
+    h0=73675.3) annotation (Placement(transformation(extent={{-72,-40},{-52,-20}}, rotation=0)));
   ThermoSysPro.WaterSteam.BoundaryConditions.SinkP puitsPCaloporteur(
     T0=302.74,
     option_temperature=1) annotation (Placement(transformation(extent={{128,-40},{148,-20}}, rotation=0)));

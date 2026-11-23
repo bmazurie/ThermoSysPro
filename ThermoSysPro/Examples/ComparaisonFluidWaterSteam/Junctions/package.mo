@@ -8,6 +8,7 @@ package Junctions "Junction comparison benches"
     parameter Real pressureAbsoluteTolerance(unit="Pa")=1;
     parameter Real flowAbsoluteTolerance(unit="kg/s")=1e-6;
     parameter Real enthalpyAbsoluteTolerance(unit="J/kg")=0.1;
+    parameter AssertionLevel assertionLevel=AssertionLevel.error;
     Real fluidQ[nPorts];
     Real fluidP[nPorts];
     Real fluidH[nPorts];
@@ -16,9 +17,9 @@ package Junctions "Junction comparison benches"
     Real waterSteamH[nPorts];
   equation
     for i in 1:nPorts loop
-      assert(ComparaisonFluidWaterSteam.isClose(fluidQ[i], waterSteamQ[i], relativeTolerance, flowAbsoluteTolerance), "Junction: Q mismatch on port " + String(i));
-      assert(ComparaisonFluidWaterSteam.isClose(fluidP[i], waterSteamP[i], relativeTolerance, pressureAbsoluteTolerance), "Junction: P mismatch on port " + String(i));
-      assert(ComparaisonFluidWaterSteam.isClose(fluidH[i], waterSteamH[i], relativeTolerance, enthalpyAbsoluteTolerance), "Junction: h mismatch on port " + String(i));
+      assert(ComparaisonFluidWaterSteam.isClose(fluidQ[i], waterSteamQ[i], relativeTolerance, flowAbsoluteTolerance), "Junction: Q mismatch on port " + String(i), assertionLevel);
+      assert(ComparaisonFluidWaterSteam.isClose(fluidP[i], waterSteamP[i], relativeTolerance, pressureAbsoluteTolerance), "Junction: P mismatch on port " + String(i), assertionLevel);
+      assert(ComparaisonFluidWaterSteam.isClose(fluidH[i], waterSteamH[i], relativeTolerance, enthalpyAbsoluteTolerance), "Junction: h mismatch on port " + String(i), assertionLevel);
     end for;
   end PartialComparison;
 end Junctions;

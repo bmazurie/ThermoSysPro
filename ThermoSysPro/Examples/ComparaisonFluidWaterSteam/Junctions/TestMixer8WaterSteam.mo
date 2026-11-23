@@ -12,9 +12,9 @@ model TestMixer8WaterSteam
   ThermoSysPro.InstrumentationAndControl.Blocks.Sources.Rampe rampe4(Initialvalue=1,Starttime=1,Finalvalue=0.001) annotation (Placement(transformation(extent={{-30,-30},{-10,-10}}, rotation=0)));
   ThermoSysPro.WaterSteam.PressureLosses.PipePressureLoss pipe1(Pm(start=286222.6050714449)) annotation (Placement(transformation(extent={{-80,-60},{-60,-40}}, rotation=0)));
   ThermoSysPro.WaterSteam.PressureLosses.PipePressureLoss pipe2(Pm(start=199709.4772494724)) annotation (Placement(transformation(extent={{-80,-60},{-60,-40}}, rotation=0)));
-  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume annotation (Placement(transformation(extent={{-40,0},{-20,20}}, rotation=0)));
-  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume1 annotation (Placement(transformation(extent={{20,-30},{40,-10}}, rotation=0)));
-  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume2 annotation (Placement(transformation(extent={{-40,-60},{-20,-40}}, rotation=0)));
+  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume(h(start=71004.06316721764)) annotation (Placement(transformation(extent={{-40,0},{-20,20}}, rotation=0)));
+  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume1(h(start=70977.89042837733)) annotation (Placement(transformation(extent={{20,-30},{40,-10}}, rotation=0)));
+  ThermoSysPro.WaterSteam.Junctions.Mixer8 staticVolume2(h(start=70921.01678153824)) annotation (Placement(transformation(extent={{-40,-60},{-20,-40}}, rotation=0)));
 equation
   connect(valve3.C2, puitsP2.C) annotation (Line(points={{70,-20},{82,-20}}, color={0,0,255}));
   connect(rampe2.y, valve3.Ouv) annotation (Line(points={{53,30},{60,30},{60,-3}}));
