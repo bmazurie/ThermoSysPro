@@ -7,7 +7,9 @@ La branche `125-CompareWaterSteam-Fluid` part de
 `c8a7181c3b81b2be44b82400622c035f54c93b4d`. Elle a ensuite intégré depuis
 GitHub les nouveaux commits de cette branche jusqu'au commit
 `ad951c0a1a4b1265084a195bfea57e3a180aacd7` (fusion de la PR #241, correction de
-`Fluid.HeatExchangers.DynamicPlateHeatExchanger`).
+`Fluid.HeatExchangers.DynamicPlateHeatExchanger`), puis jusqu'au commit
+`ad0101fa2695cd7dd21e991cbdf3797d5f2fef02` (fusion de la PR #242, portage de #154 dans
+`Fluid.HeatExchangers.SteamGenerator_1SG` et suppression de `SteamGenerator_4SG`).
 
 Elle ajoute le package
 `ThermoSysPro.Examples.ComparaisonFluidWaterSteam`. Pour chaque exemple simple
@@ -217,7 +219,7 @@ comparateur.
 | `DynamicPlateHeatExchangerW` | Banc Fluid seul en échec, banc WaterSteam seul correct, conditions aux limites déjà identiques : l'échec venait de l'anomalie du composant Fluid. Même calibration non portable de la pression du puits. | Correction du composant et du SimpleExample (PR #241), `SinkQ(Q0 = 1036)` des deux côtés, valeurs `start` de l'instance Fluid reprises de la solution WaterSteam. |
 | `DynamicWaterHeater`, `DynamicWaterHeaterOnePipe` | Tous les débits sont imposés : le démarrage en régime permanent laisse la masse de la cavité indéterminée. Fluid convergeait vers un volume liquide négatif, WaterSteam vers `hl > hv` et un niveau de 15,6 m ; pour `DynamicWaterHeater`, les deux échouaient. | Cavité `WaterHeating` en `steady_state=false` des deux côtés, avec les `P0c = 22 bar` et `Vf0 = 0,43` déjà fournis par le SimpleExample. Pour `DynamicWaterHeater`, valeurs `start` de pression et d'enthalpie des trois tubes (défauts : 1 bar en WaterSteam, 200 bar en Fluid). Variantes permanentes ajoutées : `CompareDynamicWaterHeaterSteadyState` et `CompareDynamicWaterHeaterOnePipeSteadyState` (voir ci-dessous). |
 | `DynamicCondenser` | Le SimpleExample Fluid est en bilans statiques et converge vers une cavité non physique (volume liquide de -287 m³, enthalpie vapeur de 354 kJ/kg). Le composant WaterSteam n'a pas de mode statique et son régime permanent est singulier, tous les débits étant imposés. | Fluid en bilan d'énergie dynamique ; cavité `DynamicCondenser` en `steady_state=false` des deux côtés, avec les valeurs par défaut communes `P0c = 1e4 Pa`, `Vf0 = 0,066` ; tube de refroidissement WaterSteam avec `advection=false` comme en Fluid. Pas de variante permanente : voir l'anomalie « titre de la phase vapeur ». |
-| `SteamGenerator_1SG` | Le banc WaterSteam étendait l'exemple legacy : pression primaire imposée à l'entrée au lieu de la sortie, perte de charge vapeur calibrée, niveau fixé, géométrie différente (5500 tubes, 7000 m²). En bilans statiques, le SimpleExample Fluid converge vers un ballon non physique (niveau de -6,3 m, paroi à 1085 K). | Banc WaterSteam réécrit avec la topologie Fluid et la géométrie de `Fluid.HeatExchangers.SteamGenerator_1SG`, imposée par paramètres et par modificateurs des sous-composants (`K_riser = 0` pour neutraliser `DPnulle_Tcirc`, absent en Fluid). Les deux générateurs sont dynamiques avec démarrage en régime permanent ; comme dans l'exemple legacy, le niveau est fixé (`zl = 1 m`) et la pression du puits vapeur est calculée. |
+| `SteamGenerator_1SG` | Le banc WaterSteam étendait l'exemple legacy (pression primaire imposée à l'entrée, perte de charge vapeur calibrée, niveau fixé, géométrie de 5500 tubes) alors que le composant Fluid était resté à l'état antérieur à #154 et que son SimpleExample convergeait en bilans statiques vers un ballon non physique (niveau de -6,3 m, paroi à 1085 K). | #154 a été porté dans `Fluid.HeatExchangers.SteamGenerator_1SG` (PR #242) et les exemples Fluid `TestSteamGenerator_1SG` et `TestSteamGenerator_1SG_Purge` reprennent les paramètres, conditions aux limites et inversions des exemples WaterSteam. `CompareSteamGenerator_1SG` instancie donc directement l'exemple WaterSteam `Examples.SimpleExamples.TestSteamGenerator_1SG` (le banc `TestSteamGenerator_1SGWaterSteam` est supprimé) et `CompareSteamGenerator_1SG_Purge` compare les variantes avec purge, port de purge compris. Les enthalpies comparées sont `h` des deux côtés (le comparateur précédent comparait `h_vol` côté WaterSteam, qui diffère de `h` aux entrées). Assertions bloquantes. |
 | `ControlValve` (bancs `ControlValve`, `ThreeWayValve`, `Mixer8`, `Pressurizer`, `Tank_withPipePressureLosses`, `SimpleDynamicCondenser`) | Le paramètre de régularisation `eps` de `ThermoSquare(Q, eps)` vaut `1e-3` dans `Fluid.PressureLosses.ControlValve` (depuis la v4.0) et `1` dans `WaterSteam.PressureLosses.ControlValve` (depuis 2020). En dessous de `1 kg/s`, la loi de la vanne WaterSteam est donc linéaire et non quadratique : dans `SimpleDynamicCondenser`, la calibration de `controlValve_autre` (0,12 kg/s) donne `Cvmax = 62,5` en Fluid et `180,6` en WaterSteam pour les mêmes `rho`, `deltaP` et `Q`. C'est le seul composant de perte de charge dont `eps` diffère entre les deux bibliothèques. | Aucune correction possible dans les bancs : `eps` est `protected` dans les deux composants. Un modificateur `eps = 1e-3` a été essayé : Dymola l'accepte (et les écarts de `Mixer8` et `Pressurizer` disparaissent alors), mais il est contraire à la norme et OpenModelica le refuse au `checkModel`. Il a été retiré ; l'écart est documenté dans les comparateurs concernés. Aligner les valeurs demanderait de modifier l'un des composants. |
 
 ### Variantes en régime permanent
@@ -305,9 +307,10 @@ vapeur ».
   vapeur est physique parce qu'il fixe le niveau (`zl = 1 m`) et calibre la
   perte de charge vapeur, et l'exemple legacy Book `TestDynamicCondenser`
   (tous débits imposés) ne s'initialise pas sous Dymola. En bilans dynamiques,
-  le générateur Fluid reste non physique tant que le niveau n'est pas fixé (même
-  état à -6,3 m) ; avec `zl = 1 m` il devient physique (voir
-  `CompareSteamGenerator_1SG`).
+  le générateur Fluid restait non physique tant que le niveau n'était pas fixé
+  (même état à -6,3 m). Le SimpleExample `TestSteamGenerator_1SG` a depuis été
+  réécrit avec le portage de #154 (PR #242) : bilans dynamiques, niveau fixé à
+  1 m et perte de charge vapeur calculée, comme l'exemple WaterSteam.
 - **Calibrations par liaison de paramètre `fixed=false`.** Dymola utilise la
   liaison d'un paramètre `fixed=false` comme valeur `start` ; OpenModelica
   l'utilise comme équation, ce qui sur-détermine l'initialisation. C'est le cas
@@ -350,27 +353,44 @@ vapeur ».
   dédiée de la bibliothèque Fluid, avec l'exemple `TestTwoPhaseCavityOnePipe`.
 - **`SteamGenerator_1SG`.** Le composant WaterSteam a été modifié le
   22/05/2026 (commit `2d152b4`, « Modified SG from WaterSteam to add parameters
-  and added examples with SMR #154 ») : géométrie paramétrée et downcomer
-  alimenté par `DomeGV.Cd` (sortie vers la boucle d'évaporation, à la pression
-  de fond `Pfond` et à l'enthalpie `min(hlsat, hl)`) au lieu de `DomeGV.Cs`
-  (sortie d'eau à la pression `P` et à l'enthalpie `hl`). Le composant Fluid
-  correspond à l'état antérieur (géométrie écrite dans les sous-composants,
-  `DomeGV.Cs`, depuis la v4.0). Avec le volume d'entrée du riser (`VolumeC` en
-  Fluid, `VolumeA` en WaterSteam), ces différences modifient surtout le débit de
-  recirculation (3675 kg/s contre 3965 kg/s au niveau de 1 m). Porter #154 dans
-  le composant Fluid relève d'une branche dédiée.
+  and added examples with SMR #154 ») : géométrie paramétrée, downcomer alimenté
+  par `DomeGV.Cd` (sortie vers la boucle d'évaporation, à la pression de fond
+  `Pfond` et à l'enthalpie `min(hlsat, hl)`) au lieu de `DomeGV.Cs`, volume
+  d'entrée du riser `VolumeA` avec purge, et suppression de `SteamGenerator_4SG`.
+  Le composant Fluid était resté à l'état antérieur ; #154 y a été porté par la
+  PR #242, qui supprime aussi `Fluid.HeatExchangers.SteamGenerator_4SG`. Seule
+  différence restante entre les exemples : le bilan de masse de
+  `steamGenerator.volumeA` est statique dans l'exemple Fluid sans purge. Les deux
+  réglages donnent les mêmes équations en régime permanent, mais avec le bilan
+  dynamique et sans purge, le découpage (tearing) choisi par OpenModelica est
+  mal conditionné et l'initialisation ne converge pas.
 - **`NTUWaterHeater`.** Le composant WaterSteam laisse la pression de purge
   `Ep.P` à la source, alors que le composant Fluid l'égale à la pression de la
   cavité.
 
+### Décisions
+
+Les différences suivantes sont suivies et documentées, sans modification des
+composants à ce stade :
+
+- `eps` de `ControlValve` (`1e-3` en Fluid, `1` en WaterSteam) : différence suivie,
+  les composants ne sont pas modifiés.
+- `hvIn` de `Fluid.Volumes.TwoPhaseCavityOnePipe` : laissé en l'état pour l'instant.
+- Enthalpie d'extraction de `StaticCondenser` et `StaticCondenserHEI` (terme
+  `g*z`) : laissée en l'état.
+- Échange thermique de `DynamicPlateHeatExchangerW` (corrélations SRI et
+  discrétisation) : laissé en l'état.
+
 ### Résultats
 
-Campagne complète sur les 73 comparateurs du package (les 71 d'origine et les
-deux variantes permanentes des réchauffeurs), 5 min au plus par modèle :
+Campagne complète du 20/11/2026 sur les 73 comparateurs alors présents (les 71
+d'origine et les deux variantes permanentes des réchauffeurs), 5 min au plus par
+modèle, complétée le 23/11/2026 par les deux comparateurs du générateur de vapeur
+refaits après le portage de #154 (seuls ces deux comparateurs ont été rejoués) :
 
-- **Dymola 2026x : 73/73** simulent jusqu'à leur horizon, tous en moins de 2 min.
-- **OpenModelica 1.27 : 63/73** après l'ajout de valeurs `start` à `Mixer8` et
-  `NTUWaterHeater` (61/73 lors de la campagne complète). Les 10 échecs restants
+- **Dymola 2026x : 74/74** simulent jusqu'à leur horizon, tous en moins de 2 min.
+- **OpenModelica 1.27 : 62/74** après l'ajout de valeurs `start` à `Mixer8` et
+  `NTUWaterHeater` (61/73 lors de la campagne complète). Les 12 échecs restants
   sont détaillés ci-dessous.
 
 Les écarts du tableau sont les écarts relatifs maximaux sur toute la trajectoire,
@@ -446,7 +466,8 @@ atteignent leur horizon même avec des écarts.
 | `HeatExchangers.CompareStaticCondenser` | OK (16s) | H[6] 2.0e-04 à t = 0 s | OK (20s) | H[6] 2.0e-04 à t = 0 s |
 | `HeatExchangers.CompareStaticCondenserHEI` | OK (14s) | H[6] 3.7e-04 à t = 0 s | OK (19s) | H[6] 3.7e-04 à t = 0 s |
 | `HeatExchangers.CompareSimpleDynamicCondenser` | OK (8s) | aucun | FAIL (24s) | - |
-| `HeatExchangers.CompareSteamGenerator_1SG` | OK (39s) | P[1] 1.1e-03 à t = 0 s, H[2] 1.3e-03 à t = 0 s | FAIL (258s) | - |
+| `HeatExchangers.CompareSteamGenerator_1SG` | OK (37s) | aucun | FAIL | - |
+| `HeatExchangers.CompareSteamGenerator_1SG_Purge` | OK (27s) | aucun | FAIL | - |
 | `Machines.CompareCentrifugalPump` | OK (12s) | aucun | OK (16s) | aucun |
 | `Machines.CompareStaticCentrifugalPump` | OK (10s) | aucun | OK (19s) | aucun |
 | `Machines.CompareSteamEngine` | OK (11s) | aucun | OK (26s) | aucun |
@@ -463,7 +484,7 @@ séparément sous OpenModelica 1.27 (mêmes modificateurs, 5 min au plus).
 | --- | --- | --- | --- |
 | `VolumeATh` à `VolumeITh` (5) | - | - | Échec de génération de code d'OpenModelica (sélection des variables de tearing) sur la boucle algébrique créée par le port thermique ; déjà constaté avec OpenModelica 1.23.1. |
 | `SimpleDynamicCondenser` | échec | échec | Initialisation de la turbine de Stodola : l'argument de la racine devient négatif (pression aval supérieure à la pression amont pendant les itérations). |
-| `SteamGenerator_1SG` | dépasse 5 min | échec | Côté WaterSteam, initialisation incohérente : la pression du puits vapeur est calibrée par `P0(fixed=false)` alors que `P0` porte une liaison, qu'OpenModelica utilise comme équation. Forme portable possible : niveau fixé et débit de vapeur imposé par un `SinkQ`, ce qui demande une copie du banc Fluid. |
+| `SteamGenerator_1SG`, `SteamGenerator_1SG_Purge` | OK | échec | Les exemples Fluid simulent sous OpenModelica. Les exemples WaterSteam #154 calibrent la perte de charge vapeur par `singularPressureLoss1.K(fixed=false)` alors que `K` porte une liaison par défaut dans `SingularPressureLoss` : OpenModelica utilise cette liaison comme équation et signale une initialisation incohérente. Les exemples Fluid contournent ce point par un paramètre d'inversion sans liaison (`K_steam(fixed=false)`) ; le même changement dans les exemples WaterSteam relève de la bibliothèque. |
 | `DynamicWaterHeater` | OK | dépasse 5 min | Initialisation du banc WaterSteam. |
 | `DynamicWaterHeaterSteadyState` | OK | dépasse 5 min | Initialisation du banc WaterSteam. |
 | `DynamicWaterHeaterOnePipeSteadyState` | échec | OK | Système non linéaire d'initialisation Fluid. |
@@ -538,8 +559,10 @@ reprises de la solution Dymola, données aux deux instances du comparateur :
     warnings de comparaison déjà documentés. `CompareSimpleDynamicCondenser`
     conserve son échec d'initialisation WaterSteam déjà connu sur la racine de
     la loi de Stodola : aucune régression supplémentaire n'est observée.
-  - [ ] `CompareMixer8` passe `checkModel` et la traduction, mais ne s'initialise
-    plus après la suppression du paramètre `region` de `Fluid.ControlValve`.
+  - [x] `CompareMixer8` passait `checkModel` et la traduction, mais ne s'initialisait
+    plus après la suppression du paramètre `region` de `Fluid.ControlValve`
+    (résolu le 20/11/2026 par des valeurs `start` données aux deux instances,
+    voir « Résultats »).
     Le même échec est reproduit avec le SimpleExample Fluid seul : pendant la
     résolution du système non linéaire initial, OpenModelica explore un état
     invalide et lève `Water_Ph: Incorrect region number (-1)`. Il s'agit donc
@@ -690,7 +713,7 @@ reprises de la solution Dymola, données aux deux instances du comparateur :
       (`1.5311056 MJ/kg` contre `1.5311089 MJ/kg`).
     - [ ] Les cinq variantes avec port thermique `VolumeATh`, `VolumeBTh`,
       `VolumeCTh`, `VolumeDTh` et `VolumeITh` passent `checkModel`, mais
-      OpenModelica 1.23.1 échoue pendant la génération du code sur la dérivée
+      OpenModelica (1.23.1, puis 1.27 le 20/11/2026) échoue pendant la génération du code sur la dérivée
       des propriétés WaterSteam dans la boucle algébrique introduite par le
       raccordement de leur port thermique `Cth` à la `HeatSource`. Les méthodes
       de tearing standard et minimal ont été essayées ; ce point reste à
@@ -700,7 +723,7 @@ reprises de la solution Dymola, données aux deux instances du comparateur :
     (aucun écart). Écarts relevés : `Pressurizer`, `TwoPhaseCavityOnePipe`
     (2,7 % sur une pression et une enthalpie) et `TwoPhaseVolume`.
 - [ ] Échangeurs — implémentation WaterSteam/Compare réalisée pour les
-  homologues retenus, plus deux variantes permanentes ; Dymola terminé,
+  homologues retenus, plus deux variantes permanentes et la variante avec purge du générateur de vapeur ; Dymola terminé,
   six échecs OpenModelica (voir « Résultats »).
   - [x] Revue d'équivalence des 21 candidats.
     - [x] Dix-sept modèles ont un homologue WaterSteam suffisamment proche pour
@@ -742,44 +765,16 @@ reprises de la solution Dymola, données aux deux instances du comparateur :
   - [x] Graphique : chaque banc WaterSteam contient les annotations de placement
     des composants et de tracé des connexions ; chaque `Compare...` place Fluid
     à gauche et WaterSteam à droite.
-  - [ ] OpenModelica 1.27.0 : `checkModel` réussi pour les dix-sept
-    comparaisons ; traduction et simulation validées ou diagnostiquées comme
-    suit.
-    - [x] Simulation complète réussie pour `DynamicOnePhaseFlowPipe`,
-      `DynamicOnePhaseFlowShell`, `SimpleStaticCondenser`,
-      `StaticPlateHeatExchanger`, `DynamicTwoPhaseFlowRiser`,
-      `StaticExchangerDTorWorEff`, `NTUWaterHeater`, `StaticCondenser` et
-      `StaticCondenserHEI`.
-    - [x] Les assertions signalent sans les masquer les écarts de formulation :
-      débits/enthalpies du riser, pression/enthalpie de l'échangeur DT/W/eff,
-      pression du `NTUWaterHeater` et enthalpie d'extraction des deux
-      condenseurs statiques.
-    - [x] Les huit cas dynamiques en échec ont également été simulés côté Fluid
-      seul, aux horizons de leurs SimpleExamples. Tous passent `checkModel`,
-      mais six échouent déjà à l'initialisation Fluid : ces six anomalies ne
-      peuvent donc pas être attribuées au seul portage WaterSteam.
-    - [ ] `DynamicTwoPhaseFlowPipe` échoue des deux côtés sur la contrainte
-      initiale de dérivée du débit `Q[1]`.
-    - [ ] `DynamicPlateHeatExchanger` et `DynamicPlateHeatExchangerW` échouent
-      déjà côté Fluid dans leurs systèmes non linéaires d'initialisation. Les
-      bancs combinés échouent aussi côté WaterSteam ; le composant Fluid actuel
-      comporte en outre une discrétisation et des termes de diffusion absents
-      de son prédécesseur.
-    - [ ] `DynamicWaterHeater` et `DynamicWaterHeaterOnePipe` échouent côté
-      Fluid lors de la résolution KINSOL/KLU des grands systèmes non linéaires
-      d'initialisation. Les échecs des comparateurs ne sont donc pas classés
-      comme spécifiques à WaterSteam.
-    - [ ] `SimpleDynamicCondenser` échoue également côté Fluid : dans les deux
-      architectures, l'initialisation de la turbine explore une branche où la
-      pression aval dépasse la pression amont, rendant négatif l'argument de la
-      racine de la loi de Stodola.
-    - [ ] `DynamicCondenser` simule correctement côté Fluid seul jusqu'à son
-      horizon de `1 s` ; l'échec du comparateur provient du système non linéaire
-      d'initialisation du banc WaterSteam.
-    - [ ] `SteamGenerator_1SG` simule correctement côté Fluid seul jusqu'à son
-      horizon de `1 s` ; le banc WaterSteam échoue sur la dérivée de pression
-      de son volume interne `volumeA1`.
-  - [x] Dymola 2026x : les dix-neuf comparaisons simulent, après les
+  - [ ] OpenModelica 1.27 (campagne du 20/11/2026, complétée le 23/11/2026) :
+    `checkModel` réussi pour toutes les comparaisons. Les diagnostics antérieurs
+    (`DynamicTwoPhaseFlowPipe`, échangeurs à plaques, `DynamicCondenser`,
+    `NTUWaterHeater`, `DynamicWaterHeaterOnePipe`) sont résolus par les
+    corrections décrites dans la section « Campagne Dymola 2026x et OpenModelica
+    1.27 ». Restent en échec : `SimpleDynamicCondenser`, `DynamicWaterHeater`,
+    `DynamicWaterHeaterSteadyState`, `DynamicWaterHeaterOnePipeSteadyState`,
+    `SteamGenerator_1SG` et `SteamGenerator_1SG_Purge` (voir « Échecs
+    OpenModelica »).
+  - [x] Dymola 2026x : les vingt comparaisons simulent (dont `SteamGenerator_1SG_Purge`, ajouté le 23/11/2026), après les
     corrections de bancs et du composant `DynamicPlateHeatExchanger` décrites
     dans la section « Campagne Dymola 2026x et OpenModelica 1.27 ».
 - [x] Machines — OpenModelica et Dymola terminés.
@@ -826,17 +821,21 @@ reprises de la solution Dymola, données aux deux instances du comparateur :
       déclenchent plus de warning de comparaison.
   - [x] Dymola 2026x : les deux comparaisons simulent sans écart sur le
     circuit eau-vapeur.
-- [ ] Étapes transverses.
-  - [ ] Fixer et documenter les tolérances relatives et absolues de `Q`, `P` et
-    `h` à partir des premiers résultats, sans masquer les écarts physiques.
-  - [ ] Conserver des scripts `.mos` distincts pour OpenModelica et Dymola et
-    écrire tous les artefacts de compilation hors des sources Modelica.
-  - [ ] Vérifier les diagrammes et les extrémités de connexion dans un éditeur
-    graphique ; la simulation seule ne valide pas leur lisibilité.
+- [x] Étapes transverses.
+  - [x] Fixer et documenter les tolérances relatives et absolues de `Q`, `P` et
+    `h` : tolérance relative `1e-6`, tolérances absolues `1e-6 kg/s`, `1 Pa` et
+    `0,1 J/kg` (section « Conditions ») ; les écarts de formulation sont signalés
+    au niveau `warning` plutôt que masqués par des tolérances élargies.
+  - [x] Conserver des scripts `.mos` distincts pour OpenModelica et Dymola et
+    écrire tous les artefacts de compilation hors des sources Modelica : les
+    scripts de campagne et les résultats restent hors du dépôt et ne sont pas
+    versionnés.
+  - [x] Vérifier les diagrammes et les extrémités de connexion dans un éditeur
+    graphique.
   - [x] Documenter les différences attendues de formulation, d'initialisation ou
     de propriétés entre Fluid/Medium et WaterSteam (section « Anomalies et
     différences de formulation identifiées » et documentation des comparateurs).
-  - [ ] Mettre à jour ce journal après chaque famille avec modèles, versions des
+  - [x] Mettre à jour ce journal après chaque famille avec modèles, versions des
     outils, statut des comparaisons `Q/P/h`, warnings acceptés et anomalies. Les
     valeurs numériques ne sont consignées que lorsqu'elles diffèrent.
   - [x] Lancer une campagne finale OpenModelica puis Dymola sur tout le package
